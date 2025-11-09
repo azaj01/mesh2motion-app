@@ -4,8 +4,7 @@ import { AnimationPlayer } from './AnimationPlayer.ts'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 import {
-  type AnimationClip, AnimationMixer, Quaternion, Vector3, type SkinnedMesh, type QuaternionKeyframeTrack,
-  type KeyframeTrack, type AnimationAction, type Object3D, Bone, Skeleton
+  type AnimationClip, AnimationMixer, type SkinnedMesh, type AnimationAction
 } from 'three'
 
 import { AnimationUtility } from './AnimationUtility.ts'
@@ -15,7 +14,7 @@ import { Utility } from '../../Utilities.ts'
 import { type ThemeManager } from '../../ThemeManager.ts'
 import { AnimationSearch } from './AnimationSearch.ts'
 import { type TransformedAnimationClipPair } from './interfaces/TransformedAnimationClipPair.ts'
-import { type AnimationWithState } from './interfaces/AnimationWithState.ts'
+
 
 // Note: EventTarget is a built-ininterface and do not need to import it
 export class StepAnimationsListing extends EventTarget {
@@ -229,64 +228,7 @@ export class StepAnimationsListing extends EventTarget {
       warped_clip.display_animation_clip = AnimationUtility.deep_clone_animation_clip(warped_clip.original_animation_clip)
     })
     /// Apply the arm extension warp:
-    this.apply_arm_extension_warp(this.warp_arm_amount)
-  }
-
-  private apply_arm_extension_warp (percentage: number): void {
-    // loop through each animation clip to update the tracks
-    this.animation_clips_loaded.forEach((warped_clip: TransformedAnimationClipPair) => {
-      warped_clip.display_animation_clip.tracks.forEach((track: KeyframeTrack) => {
-        // if our name does not contain 'quaternion', we need to exit
-        // since we are only modifying the quaternion tracks (e.g. L_Arm.quaternion )
-        if (track.name.indexOf('quaternion') < 0) {
-          return
-        }
-
-        const quaterion_track: QuaternionKeyframeTrack = track
-
-        // if the track is an upper arm bone, then modify that
-        const is_right_arm_track_match: boolean = quaterion_track.name.indexOf('upper_armR') > -1
-        const is_left_arm_track_match: boolean = quaterion_track.name.indexOf('upper_armL') > -1
-
-        if (is_right_arm_track_match || is_left_arm_track_match) {
-          const new_track_values: Float32Array = quaterion_track.values.slice() // clone array
-
-          const track_count: number = quaterion_track.times.length
-          for (let i = 0; i < track_count; i++) {
-            // get correct value since it is a quaternion
-            const units_in_quaternions: number = 4
-            const quaternion: Quaternion = new Quaternion()
-
-            // rotate the upper arms in opposite directions to rise/lower arms
-            if (is_right_arm_track_match) {
-              quaternion.setFromAxisAngle(new Vector3(0, 0, -1), percentage / 100)
-            }
-            if (is_left_arm_track_match) {
-              quaternion.setFromAxisAngle(new Vector3(0, 0, 1), percentage / 100)
-            }
-
-            // get the existing quaternion
-            const existing_quaternion: Quaternion = new Quaternion(
-              new_track_values[i * units_in_quaternions + 0],
-              new_track_values[i * units_in_quaternions + 1],
-              new_track_values[i * units_in_quaternions + 2],
-              new_track_values[i * units_in_quaternions + 3]
-            )
-
-            // multiply the existing quaternion by the new quaternion
-            existing_quaternion.multiply(quaternion)
-
-            // this should change the first quaternion component of the track
-            new_track_values[i * units_in_quaternions + 0] = existing_quaternion.x
-            new_track_values[i * units_in_quaternions + 1] = existing_quaternion.y
-            new_track_values[i * units_in_quaternions + 2] = existing_quaternion.z
-            new_track_values[i * units_in_quaternions + 3] = existing_quaternion.w
-          }
-
-          track.values = new_track_values
-        }
-      })
-    })
+    AnimationUtility.apply_arm_extension_warp(this.animation_clips_loaded, this.warp_arm_amount)
   }
 
   private play_animation (index: number = 0): void {
@@ -386,13 +328,6 @@ export class StepAnimationsListing extends EventTarget {
   public get_animated_selected_elements (): NodeListOf<Element> {
     // this needs to be called ad-hoc as selections might change
     return document.querySelectorAll('#animations-items input[type="checkbox"]')
-  }
-
-  public get_filtered_animations_list (): AnimationWithState[] {
-    if (this.animation_search === null) {
-      return []
-    }
-    return this.animation_search.get_selected_animations()
   }
 
   public get_animation_indices_to_export (): number[] {
