@@ -239,6 +239,19 @@ export class StepAnimationsListing extends EventTarget {
     AnimationUtility.apply_arm_extension_warp(this.animation_clips_loaded, this.warp_arm_amount)
   }
 
+  /**
+   * Not all animation files have root bone keyframes, so we need to make
+   * sure this is reset between animations to fully reset the animation state
+   * @param skinned_mesh
+   */
+  private reset_root_motion_position (skinned_mesh: SkinnedMesh): void {
+    if (skinned_mesh.skeleton.bones.length > 0) {
+      const root_bone = skinned_mesh.skeleton.bones[0] // should always be root bone
+      root_bone.position.set(0, 0, 0)
+      root_bone.updateMatrixWorld(true)
+    }
+  }
+
   private play_animation (index: number = 0): void {
     this.current_playing_index = index
 
@@ -248,7 +261,9 @@ export class StepAnimationsListing extends EventTarget {
 
     const all_animation_actions: AnimationAction[] = []
 
-    this.skinned_meshes_to_animate.forEach((skinned_mesh) => {
+    this.skinned_meshes_to_animate.forEach((skinned_mesh: SkinnedMesh) => {
+      this.reset_root_motion_position(skinned_mesh)
+
       const clip_to_play: AnimationClip = this.animation_clips_loaded[this.current_playing_index].display_animation_clip
       const anim_action: AnimationAction = this.animation_mixer.clipAction(clip_to_play, skinned_mesh)
 
