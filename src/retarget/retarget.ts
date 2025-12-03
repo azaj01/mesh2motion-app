@@ -1,5 +1,16 @@
+import { Mesh2MotionEngine } from '../Mesh2MotionEngine.ts'
+import { Vector3 } from 'three'
+
 class RetargetModule {
+  private mesh2motion_engine: Mesh2MotionEngine
   private fileInput: HTMLInputElement | null = null
+
+  constructor () {
+    // Set up camera position similar to marketing bootstrap
+    this.mesh2motion_engine = new Mesh2MotionEngine()
+    const camera_position = new Vector3().set(0, 1.7, 5)
+    this.mesh2motion_engine.set_camera_position(camera_position)
+  }
 
   public add_event_listeners (): void {
     // Get DOM elements
