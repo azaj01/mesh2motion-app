@@ -19,7 +19,7 @@ export class StepLoadModel extends EventTarget {
   private final_mesh_data: Scene = new Scene() // mesh data used when creating the skinned mesh
 
   // model data used for retargeting process. Only used during retargeting processes
-  private final_retargetable_model_data: Group<Object3DEventMap> = new Group()
+  private final_retargetable_model_data: Scene = new Scene()
   private debug_model_loading: boolean = false
 
   private model_display_name: string = 'Imported Model'
@@ -46,7 +46,7 @@ export class StepLoadModel extends EventTarget {
    * Skinned mesh data that will be used for retargeting
    * @returns Loaded Skinned mesh data that will be used for retargeting
    */
-  public get_final_retargetable_model_data (): Group<Object3DEventMap> {
+  public get_final_retargetable_model_data (): Scene {
     return this.final_retargetable_model_data
   }
 
@@ -313,8 +313,7 @@ export class StepLoadModel extends EventTarget {
     })
 
     // strip out things differently if we need to preserve skinned meshes or regular meshes
-    // retargeting mesh could be a Group object, so accept both and share this variable
-    let clean_scene_with_only_models: Scene | Group<Object3DEventMap>
+    let clean_scene_with_only_models: Scene
     if (this.preserve_skinned_mesh) {
       clean_scene_with_only_models = ModelCleanupUtility.strip_out_retargeting_model_data(this.original_model_data)
     } else {
@@ -335,7 +334,7 @@ export class StepLoadModel extends EventTarget {
     // assign the final retargetable model data to the cleaned scene with skinned meshes
     // any scaling or further processing can be donw as part of the retargeting process
     if (this.preserve_skinned_mesh) {
-      this.final_retargetable_model_data = clean_scene_with_only_models as Group<Object3DEventMap>
+      this.final_retargetable_model_data = clean_scene_with_only_models
       this.dispatchEvent(new CustomEvent('modelLoadedForRetargeting'))
       return
     }

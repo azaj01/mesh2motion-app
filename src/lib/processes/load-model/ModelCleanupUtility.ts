@@ -108,12 +108,12 @@ export class ModelCleanupUtility {
    * We need to keep parents of skinned meshes and bones for retargeting
    * This is because the hierarchy is important for retargeting to work properly
    * @param model_data Scene or Group containing the model
-   * @returns Group with everything needed for retargeting (SkinnedMesh, Bones, and their parents)
+   * @returns Scene with everything needed for retargeting (SkinnedMesh, Bones, and their parents)
    */
-  public static strip_out_retargeting_model_data (model_data: Scene | Group): Group<Object3DEventMap> {
-    // Create a new Group to hold only the objects we want to keep
-    const filtered_group = new Group()
-    filtered_group.name = 'Filtered Retargeting Data'
+  public static strip_out_retargeting_model_data (model_data: Scene): Scene {
+    // Create a new Scene to hold only the objects we want to keep
+    const filtered_scene = new Scene()
+    filtered_scene.name = 'Filtered Retargeting Data'
 
     // Find SkinnedMesh objects and preserve their complete bone hierarchy
     const skinned_meshes: SkinnedMesh[] = []
@@ -131,9 +131,9 @@ export class ModelCleanupUtility {
 
       // The clone should preserve the skeleton with proper bone hierarchy
       // Since we're cloning, the skeleton hierarchy should remain intact
-      filtered_group.add(cloned_skinned_mesh)
+      filtered_scene.add(cloned_skinned_mesh)
     })
 
-    return filtered_group
+    return filtered_scene
   }
 }
