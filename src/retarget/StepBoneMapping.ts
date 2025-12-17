@@ -1,4 +1,4 @@
-import { type Group, type Object3D, type Object3DEventMap, type Scene, type SkinnedMesh } from 'three'
+import { Group, type Object3D, type Object3DEventMap, type Scene, type SkinnedMesh } from 'three'
 import { SkeletonType } from '../lib/enums/SkeletonType.ts'
 import { BoneAutoMapper } from './BoneAutoMapper.ts'
 import { MixamoMapper } from './MixamoMapper.ts'
@@ -17,7 +17,7 @@ export class StepBoneMapping extends EventTarget {
   private target_skeleton_data: Scene | null = null
   private target_mapping_template: TargetBoneMappingType = TargetBoneMappingType.None
 
-  private source_armature: Object3D | null = null
+  private source_armature: Group = new Group()
   private source_skeleton_type: SkeletonType = SkeletonType.None
 
   // DOM references
@@ -75,13 +75,10 @@ export class StepBoneMapping extends EventTarget {
     }
   }
 
-  public set_source_skeleton_data (armature: Object3D, skeleton_type: SkeletonType): void {
+  public set_source_skeleton_data (armature: Group, skeleton_type: SkeletonType): void {
     this.source_armature = armature
 
-    console.log('setting the source armature in bone mapping:', this.source_armature)
-
     this.source_skeleton_type = skeleton_type
-    console.log('Source skeleton data set in bone mapping:', this.source_armature, 'Type:', this.source_skeleton_type)
     this.update_source_bones_list()
     this.update_auto_map_button_visibility()
   }
@@ -106,7 +103,7 @@ export class StepBoneMapping extends EventTarget {
   }
 
   // Getters
-  public get_source_armature (): Object3D | null {
+  public get_source_armature (): Group {
     return this.source_armature
   }
 

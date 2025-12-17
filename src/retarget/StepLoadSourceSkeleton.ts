@@ -1,4 +1,4 @@
-import { Object3D, type Scene, SkeletonHelper } from 'three'
+import { Group, Object3D, Scene, SkeletonHelper } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { SkeletonType } from '../lib/enums/SkeletonType.ts'
 import type GLTFResult from '../lib/processes/load-skeleton/interfaces/GLTFResult.ts'
@@ -7,14 +7,13 @@ import { ModalDialog } from '../lib/ModalDialog.ts'
 export class StepLoadSourceSkeleton extends EventTarget {
   private readonly loader: GLTFLoader = new GLTFLoader() // all skeletons are in GLB format
   private readonly _main_scene: Scene
-  private loaded_source_armature: Object3D = new Object3D()
+  private loaded_source_armature: Group = new Group()
   private skeleton_helper: SkeletonHelper | null = null
   private _added_event_listeners: boolean = false
-  
+
   private skeleton_type: SkeletonType = SkeletonType.None
-  
+
   // DOM references
-  private skeleton_selection_container: HTMLDivElement | null = null
   private skeleton_type_select: HTMLSelectElement | null = null
 
   constructor (main_scene: Scene) {
@@ -24,26 +23,25 @@ export class StepLoadSourceSkeleton extends EventTarget {
 
   public begin (): void {
     // Get DOM references
-    this.skeleton_selection_container = document.getElementById('skeleton-selection-container') as HTMLDivElement
     this.skeleton_type_select = document.getElementById('skeleton-type-select') as HTMLSelectElement
 
     if (!this._added_event_listeners) {
       this.add_event_listeners()
       this._added_event_listeners = true
     }
-    
+
     // Auto-load the default human skeleton
     this.load_default_skeleton()
   }
-  
+
   private load_default_skeleton (): void {
     // Set the skeleton type to human and load it automatically
     this.skeleton_type = SkeletonType.Human
-    
+
     this.load_skeleton_from_path(`/${SkeletonType.Human}`).catch((error) => {
       console.error('Failed to load default human skeleton:', error)
     })
-    
+
     // Dispatch event to notify that skeleton is being loaded
     this.dispatchEvent(new CustomEvent('skeleton-loading'))
   }
@@ -62,15 +60,15 @@ export class StepLoadSourceSkeleton extends EventTarget {
 
     // Map selection to skeleton type enum
     this.skeleton_type = this.get_skeleton_type_enum(selected_value)
-    
+
     // Clear any previously loaded skeleton
     this.clear_previous_skeleton()
-    
+
     // Load the selected skeleton using the file path from the enum
     this.load_skeleton_from_path(`/${this.skeleton_type}`).catch((error) => {
       console.error('Failed to load skeleton:', error)
     })
-    
+
     // Dispatch event to notify that skeleton is being loaded
     this.dispatchEvent(new CustomEvent('skeleton-loading'))
   }
@@ -113,16 +111,13 @@ export class StepLoadSourceSkeleton extends EventTarget {
 
   private process_loaded_skeleton (gltf: GLTFResult): void {
     // Validate and extract armature from skeleton file
-    const armature = this.validate_skeleton_loaded(gltf)
-    
-    if (armature === null) {
-      console.error('No bones found in skeleton file')
+    if (!this.is_skeleton_valid(gltf)) {
       this.show_error_dialog('No bones found in skeleton file. Please select a valid skeleton.')
       return
     }
 
-    this.loaded_source_armature = armature.clone()
-    this.loaded_source_armature.name = 'Source Armature (Mesh2Motion)'
+    this.loaded_source_armature = gltf.scene.clone() as Group
+    this.loaded_source_armature.name = 'Source Skeleton Scene (Mesh2Motion)'
 
     // Offset position to the side so it's visible next to the target skeleton
     this.loaded_source_armature.position.set(2.5, 0, 0)
@@ -137,34 +132,29 @@ export class StepLoadSourceSkeleton extends EventTarget {
     this.dispatchEvent(new CustomEvent('skeleton-loaded'))
   }
 
-  private validate_skeleton_loaded (gltf: GLTFResult): Object3D | null {
-    let armature_found = false
-    let original_armature: Object3D | null = null
+  private is_skeleton_valid (gltf: GLTFResult): boolean {
+    let has_bones: boolean = false
 
     // We have full control over the skeleton files, but do this
     // just in case things change in the future with validation
     gltf.scene.traverse((child: Object3D) => {
-      if (child.type === 'Bone' && !armature_found) {
-        armature_found = true
-
-        if (child.parent != null) {
-          original_armature = child.parent
-        }
+      if (child.type === 'Bone') {
+        has_bones = true
       }
     })
 
-    return original_armature
+    return has_bones
   }
 
   private add_skeleton_and_helper_to_scene (): void {
     // Add the source skeleton to the scene
     this._main_scene.add(this.loaded_source_armature)
-    
+
     // Create skeleton helper for visualization
     this.skeleton_helper = new SkeletonHelper(this.loaded_source_armature)
     this.skeleton_helper.name = 'Source Skeleton Helper (Mesh2Motion)'
     this._main_scene.add(this.skeleton_helper)
-    
+
     console.log('Source skeleton added to scene with helper')
   }
 
@@ -174,7 +164,7 @@ export class StepLoadSourceSkeleton extends EventTarget {
       this._main_scene.remove(this.loaded_source_armature)
       console.log('Removed previous source armature from scene')
     }
-    
+
     // Remove previous skeleton helper from scene
     if (this.skeleton_helper !== null) {
       if (this.skeleton_helper.parent !== null) {

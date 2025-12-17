@@ -51,7 +51,7 @@ export class BoneAutoMapper {
    * @returns Map of target bone name -> source bone name
    */
   public static auto_map_bones (
-    source_armature: Object3D,
+    source_armature: Group,
     target_skeleton_data: Scene,
     target_bone_mapping_type: TargetBoneMappingType
   ): Map<string, string> {
@@ -141,7 +141,7 @@ export class BoneAutoMapper {
    * @param source_armature - Source skeleton armature
    * @returns Map of bone name to parent bone name
    */
-  private static extract_source_bone_parent_map (source_armature: Object3D): Map<string, string | null> {
+  private static extract_source_bone_parent_map (source_armature: Group): Map<string, string | null> {
     const parent_map = new Map<string, string | null>()
 
     source_armature.traverse((child) => {
