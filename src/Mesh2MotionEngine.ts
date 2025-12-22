@@ -95,6 +95,10 @@ export class Mesh2MotionEngine {
     this.setup_tooltips()
   }
 
+  public get_theme_manager(): ThemeManager {
+    return this.theme_manager
+  }
+
   /** Eventually make the scene its own singleton/manager class
    * that we can inject into other classes that need it
    */

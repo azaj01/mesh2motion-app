@@ -112,3 +112,11 @@ h1 {
     padding: 0.25rem 0.5rem;
     border-radius: 5px;
 }
+
+#animations-items {
+    max-height: calc(100vh - 14rem);
+}
+
+#animation-listing-count {
+    top: 1.4rem;
+}

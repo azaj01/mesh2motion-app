@@ -1,0 +1,182 @@
+import { AnimationPlayer } from '../lib/processes/animations-listing/AnimationPlayer.ts'
+import { AnimationSearch } from '../lib/processes/animations-listing/AnimationSearch.ts'
+import { AnimationLoader } from '../lib/processes/animations-listing/AnimationLoader.ts'
+import { type AnimationClip, AnimationMixer, type SkinnedMesh, Object3D, Object3DEventMap, Group } from 'three'
+import { SkeletonType } from '../lib/enums/SkeletonType.ts'
+import { ThemeManager } from '../lib/ThemeManager.ts'
+import { type TransformedAnimationClipPair } from '../lib/processes/animations-listing/interfaces/TransformedAnimationClipPair.ts'
+
+/**
+ * RetargetAnimationListing - Handles animation listing and playback specifically for retargeting workflow
+ * Reuses AnimationPlayer, AnimationSearch, and AnimationLoader but tailored for retargeting needs
+ */
+export class RetargetAnimationListing extends EventTarget {
+  private readonly theme_manager: ThemeManager
+  private readonly animation_player: AnimationPlayer
+  private readonly animation_loader: AnimationLoader = new AnimationLoader()
+  
+  private animation_clips_loaded: TransformedAnimationClipPair[] = []
+  private animation_mixer: AnimationMixer = new AnimationMixer(new Object3D())
+  private skinned_meshes_to_animate: SkinnedMesh[] = []
+  private skeleton_type: SkeletonType = SkeletonType.Human
+  
+  private _added_event_listeners: boolean = false
+  
+  public animation_search: AnimationSearch | null = null
+
+  constructor (theme_manager: ThemeManager) {
+    super()
+    this.theme_manager = theme_manager
+    this.animation_player = new AnimationPlayer()
+  }
+
+  public begin (skeleton_type: SkeletonType): void {
+    this.skeleton_type = skeleton_type
+
+    this.reset_step_data()
+
+    if (!this._added_event_listeners) {
+      this.add_event_listeners()
+      this._added_event_listeners = true
+    }
+  }
+
+  public reset_step_data (): void {
+    this.animation_clips_loaded = []
+    this.skinned_meshes_to_animate = []
+    this.animation_mixer = new AnimationMixer(new Object3D())
+    this.animation_player.clear_animation()
+  }
+
+  public mixer (): AnimationMixer {
+    return this.animation_mixer
+  }
+
+  public frame_change (delta_time: number): void {
+    this.mixer().update(delta_time)
+    this.animation_player.update(delta_time)
+  }
+
+  public animation_clips (): AnimationClip[] {
+    return this.animation_clips_loaded.map(clip => clip.display_animation_clip)
+  }
+
+  public load_and_apply_default_animation_to_skinned_mesh (retarget_meshes: Group<Object3DEventMap>): void {
+    // load the Group skinned mesh and convert to normal SkinnedMesh array
+    this.skinned_meshes_to_animate = retarget_meshes.children.filter((child) => {
+      return (child as SkinnedMesh).isSkinnedMesh
+    }) as SkinnedMesh[]
+
+    console.log(`Preparing to load animations for ${this.skinned_meshes_to_animate.length} skinned meshes`)
+
+    this.animation_loader.set_animations_file_path('../../animations/')
+    this.animation_clips_loaded = []
+    this.animation_mixer = new AnimationMixer(new Object3D())
+
+    this.animation_loader.load_animations(this.skeleton_type)
+      .then((loaded_clips: TransformedAnimationClipPair[]) => {
+        this.animation_clips_loaded = loaded_clips
+        this.on_all_animations_loaded()
+      })
+      .catch((error: Error) => {
+        console.error('Failed to load animations for retargeting:', error)
+      })
+  }
+
+  private on_all_animations_loaded (): void {
+    // Sort alphabetically
+    this.animation_clips_loaded.sort((a: TransformedAnimationClipPair, b: TransformedAnimationClipPair) => {
+      if (a.display_animation_clip.name < b.display_animation_clip.name) return -1
+      if (a.display_animation_clip.name > b.display_animation_clip.name) return 1
+      return 0
+    })
+
+    // Build animation UI
+    this.build_animation_clip_ui(
+      this.animation_clips_loaded.map(clip => clip.display_animation_clip)
+    )
+
+    // Update animation selection count when selections change
+    this.animation_search?.addEventListener('export-options-changed', () => {
+      const count_element = document.getElementById('animation-selection-count')
+      if (count_element !== null) {
+        count_element.textContent = this.animation_search?.get_selected_animation_indices().length.toString() ?? '0'
+      }
+    })
+
+    // Update animation listing count display
+    const listing_count_element = document.getElementById('animation-listing-count')
+    if (listing_count_element !== null) {
+      listing_count_element.textContent = this.animation_clips_loaded.length.toString()
+    }
+
+    console.log(`Loaded ${this.animation_clips_loaded.length} animations for retargeting`)
+  }
+
+  private build_animation_clip_ui (animation_clips: AnimationClip[]): void {
+    // Initialize AnimationSearch with the loaded clips
+    this.animation_search = new AnimationSearch(
+      'animation-filter',
+      'animations-items',
+      this.theme_manager,
+      this.skeleton_type
+    )
+    
+    this.animation_search.initialize_animations(animation_clips)
+
+    // Add click event listeners to animation items for playback
+    const animations_container = document.getElementById('animations-items')
+    if (animations_container !== null) {
+      animations_container.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement
+        const button = target.closest('.play') as HTMLButtonElement
+        
+        if (button !== null) {
+          const index = parseInt(button.dataset.index ?? '-1')
+          if (index >= 0) {
+            this.play_animation(index)
+          }
+        }
+      })
+    }
+  }
+
+  private play_animation (index: number): void {
+    if (index < 0 || index >= this.animation_clips_loaded.length) {
+      console.warn('Invalid animation index:', index)
+      return
+    }
+
+    const animation_pair = this.animation_clips_loaded[index]
+    const display_clip = animation_pair.display_animation_clip
+
+    // Stop all current actions
+    this.animation_mixer.stopAllAction()
+
+    // Create new actions for each skinned mesh
+    const actions = this.skinned_meshes_to_animate.map((mesh) => {
+      const action = this.animation_mixer.clipAction(display_clip, mesh)
+      action.reset()
+      action.play()
+      return action
+    })
+
+    // Update the animation player UI
+    this.animation_player.set_animation(display_clip, actions)
+
+    console.log('Playing animation:', display_clip.name)
+  }
+
+  private add_event_listeners (): void {
+    // Add any retarget-specific event listeners here
+    // For now, keeping it minimal
+  }
+
+  public get_animation_player (): AnimationPlayer {
+    return this.animation_player
+  }
+
+  public get_selected_animation_indices (): number[] {
+    return this.animation_search?.get_selected_animation_indices() ?? []
+  }
+}

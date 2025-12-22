@@ -4,6 +4,7 @@ import { StepLoadSourceSkeleton } from './steps/StepLoadSourceSkeleton.ts'
 import { StepLoadTargetModel } from './steps/StepLoadTargetModel.ts'
 import { StepBoneMapping } from './steps/StepBoneMapping.ts'
 import { RetargetAnimationPreview } from './RetargetAnimationPreview.ts'
+import { RetargetAnimationListing } from './RetargetAnimationListing.ts'
 
 class RetargetModule {
   private readonly mesh2motion_engine: Mesh2MotionEngine
@@ -11,6 +12,7 @@ class RetargetModule {
   private readonly step_load_target_model: StepLoadTargetModel
   private readonly step_bone_mapping: StepBoneMapping
   private readonly retarget_animation_preview: RetargetAnimationPreview
+  private animation_listing_step: RetargetAnimationListing | null = null
 
   private continue_button: HTMLButtonElement | null
   private back_to_bone_map_button: HTMLButtonElement | null = null
@@ -88,12 +90,19 @@ class RetargetModule {
       // Show "Continue" button to proceed to animation listing
       this.continue_button = document.getElementById('continue-to-listing-button') as HTMLButtonElement
       this.continue_button.style.display = 'block'
+
+      // move this continue onclick to the normal add event listener area to prevent multiple bindings
       this.continue_button.onclick = () => {
         // Hide the bone-mapping-step ID and show the skinned-step-animation-export-options ID
         if (bone_mapping_step !== null && animation_export_options !== null) {
           bone_mapping_step.style.display = 'none'
           animation_export_options.style.display = 'inline'
         }
+
+        // load the animation listing step
+        this.animation_listing_step = new RetargetAnimationListing(this.mesh2motion_engine.get_theme_manager())
+        this.animation_listing_step.begin(this.step_load_source_skeleton.get_skeleton_type())
+        this.animation_listing_step.load_and_apply_default_animation_to_skinned_mesh(retargetable_meshes)
       }
     })
   }
