@@ -6,6 +6,9 @@ import Vec3 from './Vec3'
 import Quat from './Quat'
 import Transform from './Transform'
 
+// example and library functions taken from sketchpunklabs
+// https://github.com/sketchpunklabs/threejs_proto/blob/main/code/webgl/anim/002_retarget_4m2m.html
+
 export class Retargeter {
   clip: THREE.AnimationClip | null = null
   mixer: THREE.AnimationMixer
