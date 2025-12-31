@@ -6,7 +6,7 @@ import Vec3 from './Vec3'
 import Quat from './Quat'
 import Transform from './Transform'
 import { type RigItem } from './RigItem'
-import { Joint } from './Joint'
+import { type Joint } from './Joint'
 
 // example and library functions taken from sketchpunklabs
 // https://github.com/sketchpunklabs/threejs_proto/blob/main/code/webgl/anim/002_retarget_4m2m.html
@@ -160,13 +160,13 @@ export class Retargeter {
     if (src === null || tar === null) return
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    const aTran = this.getWorld(this.srcRig.skel, src[0].idx)
-    const aSwing = new Vec3().fromQuat(aTran.rot, src[0].swing)
-    const aTwist = new Vec3().fromQuat(aTran.rot, src[0].twist)
+    const aTran: Transform = this.getWorld(this.srcRig.skel, src[0].idx)
+    const aSwing: Vec3 = new Vec3().fromQuat(aTran.rot, src[0].swing)
+    const aTwist: Vec3 = new Vec3().fromQuat(aTran.rot, src[0].twist)
 
-    const bTran = this.getWorld(this.srcRig.skel, src[src.length - 1].idx)
-    const bSwing = new Vec3().fromQuat(bTran.rot, src[src.length - 1].swing)
-    const bTwist = new Vec3().fromQuat(bTran.rot, src[src.length - 1].twist)
+    const bTran: Transform = this.getWorld(this.srcRig.skel, src[src.length - 1].idx)
+    const bSwing: Vec3 = new Vec3().fromQuat(bTran.rot, src[src.length - 1].swing)
+    const bTwist: Vec3 = new Vec3().fromQuat(bTran.rot, src[src.length - 1].twist)
 
     // Visualize data over source skeleton
     // Debug.pnt.add(aTran.pos, 0xffff00, 1.2)
@@ -208,43 +208,44 @@ export class Retargeter {
 
   // Compute offset translation & scale it to fit better on target
   applyScaledTranslation (k: string): void {
-    if (this.srcRig === null || this.tarRig === null || this.pose === null) {
-      console.warn('Retargeter: applyScaledTranslation(). Missing srcRig, tarRig, or pose.')
-      return
-    }
-
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Make sure we have our src & target
+    // get chain root items
     const src: RigItem = this.srcRig.chains[k][0]
     const tar: RigItem = this.tarRig.chains[k][0]
     if (src === null || tar === null) return
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Compute offset position change from animation
-    const scl = this.tarRig.scalar / this.srcRig.scalar // Scale from Src to Tar
+    const scale_delta: number = this.tarRig.scalar / this.srcRig.scalar // Scale from Src to Tar
     const source_t_pose_joint: Joint = this.srcRig.tpose.joints[src.idx] // TPose Src Joint
     const source_ws_transform: Transform = this.getWorld(this.srcRig.skel, src.idx) // WS Tranform of Src Bone
 
     // ( animated.joint.world.pos - tpose.joint.world.pos ) * ( tarHipHeight / srcHipHeight )
-    const offset: Vec3 = new Vec3()
+    const transform_offset: Vec3 = new Vec3()
       .fromSub(source_ws_transform.pos, source_t_pose_joint.world.pos)
-      .scale(scl)
+      .scale(scale_delta)
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Neutral Transform
-    const ptran: Transform = this.pose.getWorld(tar.pidx)
-    const ctran: Transform = new Transform().fromMul(ptran, this.tarRig.tpose.joints[tar.idx].local)
+    const parent_transform: Transform = this.pose.getWorld(tar.pidx)
+    const ctran: Transform = new Transform().fromMul(parent_transform, this.tarRig.tpose.joints[tar.idx].local)
 
     // Add scaled offset translation
-    const pos: Vec3 = new Vec3().fromAdd(ctran.pos, offset)
+    const pos: Vec3 = new Vec3().fromAdd(ctran.pos, transform_offset)
 
     // Save to local space
-    this.pose.setPos(tar.idx, ptran.toLocalPos(pos))
+    this.pose.setPos(tar.idx, parent_transform.toLocalPos(pos))
   }
   // #endregion
 
   // #region THREEJS HELPERS
-  // Run 3KJS's GetWorld functions & return as a Transform Object
+  /**
+   *  Run three.js GetWorld functions & return as a Transform Object
+   * @param skel THREE.Skeleton to get bone from
+   * @param bone_idx Bone index
+   * @param trans Transform object to store result in
+   * @returns transform object for chaining. Also mutates the original transform passed in
+   */
   public getWorld (skel: THREE.Skeleton, bone_idx: number, trans: Transform = new Transform()): Transform {
     const b: THREE.Bone = skel.bones[bone_idx]
     const p: THREE.Vector3 = b.getWorldPosition(new THREE.Vector3())

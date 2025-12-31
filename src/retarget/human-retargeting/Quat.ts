@@ -4,10 +4,25 @@ import Vec3 from './Vec3.js'
 // they are implicitly created by the Array base class.
 export default class Quat extends Array {
   // optional copy contructor
-  constructor (v: Quat | null = null) {
+  constructor (v: Quat | number | null = null, y?: number, z?: number, w?: number) {
     super(4)
-    if (v?.length === 4) this.copy(v)
-    else this.identity()
+
+    if (typeof v === 'number' && y !== undefined && z !== undefined && w !== undefined) {
+      this[0] = v
+      this[1] = y
+      this[2] = z
+      this[3] = w
+      return
+    }
+
+    if (v === null) {
+      this.identity()
+      return
+    }
+
+    if (typeof v === 'object' && v?.length === 4) {
+      this.copy(v)
+    }
   }
 
   // #region SETTERS

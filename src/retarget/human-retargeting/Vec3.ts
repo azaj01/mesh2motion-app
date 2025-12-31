@@ -57,6 +57,19 @@ export default class Vec3 extends Array {
     this[2] = o.z
     return this
   }
+
+  set x (x: number) {
+    this[0] = x
+  }
+
+  set y (y: number) {
+    this[1] = y
+  }
+
+  set z (z: number) {
+    this[2] = z
+  }
+
   // #endregion
 
   // #region GETTERS
@@ -79,6 +92,12 @@ export default class Vec3 extends Array {
   // #endregion
 
   // #region FROM OPS
+  /**
+   * Adds two vectors and sets this vector to the result
+   * @param a First Vec3 to add
+   * @param b Second Vec3 to add
+   * @returns vec3 object for chaining. It also mutates the original vector that calls this method
+   */
   fromAdd (a: Vec3, b: Vec3): this {
     this[0] = a[0] + b[0]
     this[1] = a[1] + b[1]
