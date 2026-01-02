@@ -52,6 +52,15 @@ export default class Quat extends Array {
     return this
   }
 
+  // copyObj...but just pass in the individual components
+  xyzw (x: number, y: number, z: number, w: number): this {
+    this[0] = x
+    this[1] = y
+    this[2] = z
+    this[3] = w
+    return this
+  }
+
   // object needs to contain x,y,z,w keys. Ok to have other properties since
   // we only care about these four.
   copyObj (o: { x: number, y: number, z: number, w: number, [key: string]: unknown }): this {

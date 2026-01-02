@@ -40,24 +40,24 @@ export class Retargeter {
 
     // Compute vectors from animation source
     // then align target joints to it
-    this.applyScaledTranslation('pelvis')
-    this.applyEndInterp('spine')
-    this.applyEndInterp('head')
-    this.applyEndInterp('armL')
-    this.applyEndInterp('armR')
-    this.applyEndInterp('legL')
-    this.applyEndInterp('legR')
+    // this.applyScaledTranslation('pelvis')
+    // this.applyEndInterp('spine')
+    // this.applyEndInterp('head')
+    // this.applyEndInterp('armL')
+    // this.applyEndInterp('armR')
+    // this.applyEndInterp('legL')
+    // this.applyEndInterp('legR')
 
     // TODO: Figure out why the applyChain() version is doing nothing
-    // this.applyScaledTranslation('pelvis') // apply position scaling for hips
-    // this.applyChain('pelvis')
-    // this.applyEndInterp('spine')
-    // this.applyChain('head')
+    this.applyScaledTranslation('pelvis') // apply position scaling for hips
+    this.applyChain('pelvis')
+    this.applyEndInterp('spine')
+    this.applyChain('head')
 
-    // this.applyChain('armL')
-    // this.applyChain('armR')
-    // this.applyChain('legL')
-    // this.applyChain('legR')
+    this.applyChain('armL')
+    this.applyChain('armR')
+    this.applyChain('legL')
+    this.applyChain('legR')
 
     // Run Additives if any exist
     for (const i of this.additives) {
@@ -228,8 +228,8 @@ export class Retargeter {
       bone = this.srcRig.skel.bones[src[i].idx]
       bone.getWorldPosition(vec)
       bone.getWorldQuaternion(quat)
-      source_position.copyTo(new Vec3(vec.x, vec.y, vec.z))
-      source_rotation.copyTo(new Quat(quat.x, quat.y, quat.z, quat.w))
+      source_position.xyz(vec.x, vec.y, vec.z)
+      source_rotation.xyzw(quat.x, quat.y, quat.z, quat.w)
 
       source_swing.fromQuat(source_rotation, src[i].swing)
       source_twist.fromQuat(source_rotation, src[i].twist)
