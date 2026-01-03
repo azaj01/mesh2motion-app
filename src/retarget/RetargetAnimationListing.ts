@@ -65,6 +65,16 @@ export class RetargetAnimationListing extends EventTarget {
 
   public stop_preview (): void {
     this.is_animations_active = false
+
+    // Stop all active animations in the mixer
+    // this is really important if we go back to the bone mapping
+    // this makes sure to stop any running animations in listing
+    if (this.animation_mixer !== null) {
+      this.animation_mixer.stopAllAction()
+    }
+
+    // Clear the animation player UI
+    this.animation_player.clear_animation()
   }
 
   public load_and_apply_default_animation_to_skinned_mesh (): void {
