@@ -91,10 +91,14 @@
                                 <button id="clear-mappings-button" class="secondary-button" style="display: none;">Clear Mappings</button>
                             </div>
                             
-                            <p>Bones List  <span id="target-bone-count">(0)</span></p>
-                            <div id="target-bones-list">
-                                <p style="color: var(--text-secondary);">No target skeleton loaded</p>
-                            </div>
+                            <span id="target-bones-list-container">
+                                <p>Bones List  <span id="target-bone-count">(0)</span></p>
+                                <div id="target-bones-list">
+                                    <p style="color: var(--text-secondary);">No target skeleton loaded</p>
+                                </div>
+                            </span>
+                            <span id="no-bone-mapping-needed-message" style="display: none;">No bone mapping needed. The uploaded model is using a Mesh2Motion rig. The bone names of this match the source skeleton exactly.</span>
+
                         </div>
 
                     </div>

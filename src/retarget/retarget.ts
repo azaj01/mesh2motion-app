@@ -7,6 +7,7 @@ import { RetargetAnimationPreview } from './RetargetAnimationPreview.ts'
 import { RetargetAnimationListing } from './RetargetAnimationListing.ts'
 import { AnimationRetargetService } from './AnimationRetargetService'
 import { type SkeletonType } from '../lib/enums/SkeletonType.ts'
+import { RetargetUtils } from './RetargetUtils.ts'
 
 class RetargetModule {
   private readonly mesh2motion_engine: Mesh2MotionEngine
@@ -85,6 +86,11 @@ class RetargetModule {
       // animation service keeps track of shared data across classes
       AnimationRetargetService.getInstance().set_source_armature(source_armature)
       AnimationRetargetService.getInstance().set_skeleton_type(skeleton_type)
+
+      console.log('Source skeleton loaded:', skeleton_type)
+
+      this.check_for_mesh2motion_retarget()
+
       this.step_bone_mapping.source_armature_updated()
     })
 
@@ -99,11 +105,14 @@ class RetargetModule {
 
       AnimationRetargetService.getInstance().set_target_armature(temp_target_armature)
 
+      // if the uploaded model is a M2M rig, we don't need to do any bone mapping
+      // hide the bones list and show a message
+      this.check_for_mesh2motion_retarget()
+
       // hide the skeleton helper since we are on that step
       this.step_load_source_skeleton.show_skeleton_helper(false)
 
-      // Set target skeleton data in bone mapping (uploaded mesh)
-      this.step_bone_mapping.target_armature_updated()
+
       this.start_live_preview()
 
       // Show "Continue" button to proceed to animation listing
@@ -133,6 +142,32 @@ class RetargetModule {
 
       this.animation_listing_step.load_and_apply_default_animation_to_skinned_mesh()
       this.animation_listing_step.start_preview()
+    }
+  }
+
+  private check_for_mesh2motion_retarget (): void {
+    // if the source and target is identical, no need to do bone mapping step
+    const identical_bones: boolean = RetargetUtils.are_source_and_target_bones_identical(
+      AnimationRetargetService.getInstance().get_source_armature(),
+      AnimationRetargetService.getInstance().get_target_armature()
+    )
+
+    console.log('Are source and target bones identical (no mapping needed)?', identical_bones)
+
+    const target_bones_list_container = document.getElementById('target-bones-list-container')
+    const no_bone_mapping_needed_message = document.getElementById('no-bone-mapping-needed-message')
+
+    if (target_bones_list_container !== null) {
+      target_bones_list_container.style.display = identical_bones ? 'none' : 'block'
+    }
+
+    if (no_bone_mapping_needed_message !== null) {
+      no_bone_mapping_needed_message.style.display = identical_bones ? 'inline-flex' : 'none'
+    }
+
+    // bones are not the same...so we need to do bone mapping
+    if (!identical_bones) {
+      this.step_bone_mapping.target_armature_updated()
     }
   }
 

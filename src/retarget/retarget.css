@@ -128,3 +128,9 @@ h1 {
     border-radius: 0.25rem;
     display: none;
 }
+
+#no-bone-mapping-needed-message {
+    max-width: 13rem;
+    margin-top: 2rem;
+    font-style: italic;
+}

@@ -22,7 +22,7 @@ export class RetargetUtils {
    * Validates that the retargetable model contains SkinnedMeshes with bones
    * @returns true if valid SkinnedMeshes are found, false otherwise
    */
-  static validate_skinned_mesh_has_bones (retargetable_model: Scene): boolean {
+  static validate_skinned_mesh_has_bones (retargetable_model: Scene, show_error: boolean = true): boolean {
     // Collect all SkinnedMeshes
     let has_skinned_mesh_with_bones = false
     retargetable_model.traverse((child) => {
@@ -33,12 +33,47 @@ export class RetargetUtils {
 
     // Check if we have any SkinnedMeshes
     if (!has_skinned_mesh_with_bones) {
-      new ModalDialog('No SkinnedMeshes found in file', 'Error opening file').show()
+      if (show_error) {
+        new ModalDialog('No SkinnedMeshes found in file', 'Error opening file').show()
+      }
       return false
     }
 
     console.log('skinned meshes found. ready to start retargeting process:', has_skinned_mesh_with_bones)
     return true
+  }
+
+  /**
+   * Determines if our target rig is a perfect match to the source rig (M2M) by comparing bone names
+   * When this happens, we don't need any bone mapping since we have a 1:1 match
+   * @param source_armature Always a Mesh2Motion rig
+   * @param target_armature user-uploaded rig
+   * @returns boolean indicating if the bone names are identical
+   */
+  static are_source_and_target_bones_identical (source_armature: Group, target_armature: Scene): boolean {
+    // if there is no target armature at all, return false
+    if (!this.validate_skinned_mesh_has_bones(target_armature, false)) {
+      return false
+    }
+
+    // collect all bones from source
+    const source_bone_names: Set<string> = new Set<string>()
+    source_armature.traverse((child) => {
+      if (child.type === 'Bone') {
+        source_bone_names.add(child.name)
+      }
+    })
+
+    let all_bones_match = true
+    target_armature.traverse((child) => {
+      if (child.type === 'Bone') {
+        if (!source_bone_names.has(child.name)) {
+          all_bones_match = false
+        }
+      }
+    })
+
+    return all_bones_match
   }
 
   /**
