@@ -72,8 +72,8 @@ export class AnimationUtility {
         const quaterion_track: QuaternionKeyframeTrack = track
 
         // if the track is an upper arm bone, then modify that
-        const is_right_arm_track_match: boolean = quaterion_track.name.includes('upper_armR')
-        const is_left_arm_track_match: boolean = quaterion_track.name.includes('upper_armL')
+        const is_right_arm_track_match: boolean = quaterion_track.name.includes('upperarm_l')
+        const is_left_arm_track_match: boolean = quaterion_track.name.includes('upperarm_r')
 
         if (is_right_arm_track_match || is_left_arm_track_match) {
           const new_track_values: Float32Array = quaterion_track.values.slice() // clone array
